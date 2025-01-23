@@ -32,7 +32,7 @@ function enable_service() {
     local service_name
     service_name="$1"
 
-    if [[ -z "$enable_service" ]]; then
+    if [[ -z "$enable_cmd" ]]; then
         echo "Enable command not set."
         return 1
     fi
