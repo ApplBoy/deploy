@@ -169,35 +169,39 @@ function add_on_dispatch_rule() {
     awk '
     BEGIN { on_found = 0 }
     /^on:/ {
-        on_found = 1
-        print $0
-        print "  workflow_dispatch:" # Add workflow_dispatch under on:
-        next
-    }
-    END {
-        if (!on_found) {
-        print "on:"
-        print "  workflow_dispatch:" # Add the whole on: block if missing
+        if (on_found == 0) {
+            on_found = 1
+            print $0
+            print "  workflow_dispatch:" # Add workflow_dispatch under on:
+            next
         }
     }
-    { print $0 }
+    { print $0 } # Print every line normally
+    END {
+        if (!on_found) {
+            print "on:" # Add the whole on: block if missing
+            print "  workflow_dispatch:"
+        }
+    }
     ' "$workflow_file" >"$workflow_file.tmp"
 
+    # Check if the rule was added successfully
     rule_exists=$(find_on_dispatch_rule "$workflow_file.tmp")
 
-    if [[ "$rule_exists" != "false" ]]; then
-        echo "${fg_red}Failed to add on:workflow_dispatch rule to the workflow"
-        # shellcheck disable=SC2154
-        echo "file: $workflow_file${ta_none}"
-        return 1
+    if [[ "$rule_exists" != "true" ]]; then
+        local error="Failed to add on:workflow_dispatch rule to the workflow file.
+file: $workflow_file${ta_none}"
+        script_exit "$error" 1
     fi
 
+    # Show diff and confirm with the user
     user_confirmed=$(check_diff "$workflow_file" "$workflow_file.tmp")
     if [[ "$user_confirmed" != "true" ]]; then
-        echo "${fg_red}User did not confirm the diff.${ta_none}"
-        return 1
+        local error="${fg_red}User did not confirm the diff.${ta_none}"
+        script_exit "$error" 1
     else
         mv "$workflow_file.tmp" "$workflow_file"
+        echo "Successfully added on:workflow_dispatch to $workflow_file."
     fi
 }
 
