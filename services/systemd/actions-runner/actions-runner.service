@@ -1,0 +1,16 @@
+[Unit]
+Description=Actions Runner Service
+After=network.target
+
+[Service]
+User=${USER}
+WorkingDirectory=${HOME}/actions-runner
+ExecStart=${HOME}/actions-runner/run.sh
+Restart=always
+RestartSec=10
+Environment=PATH=/usr/bin:/usr/local/bin:${HOME}/actions-runner
+Environment=HOME=${HOME}
+
+[Install]
+WantedBy=multi-user.target
+
