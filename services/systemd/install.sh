@@ -148,7 +148,7 @@ function check_diff() {
         echo "$diff_output" >&2
 
         read -rp "Is this diff as expected? [y/N]: " continue_diff
-        if [[ "$continue_diff" =~ ^[Yy][Ee][Ss]$ ]]; then
+        if [[ "$continue_diff" =~ ^([Yy]|[Ss]|[Yy][Ee][Ss])$ ]]; then
             echo "true"
         else
             echo "false"
