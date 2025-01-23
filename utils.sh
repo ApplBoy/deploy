@@ -621,6 +621,8 @@ function install_package() {
 	local package_manager
 	package_manager=$(get_package_manager)
 
+	echo "${fg_cyan}Installing package: $package_name${ta_none}"
+
 	case "$package_manager" in
 	apt-get) run_as_root apt-get install -y "$package_name" >/dev/null ;;
 	yum) run_as_root yum install -y "$package_name" >/dev/null ;;
