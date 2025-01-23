@@ -638,7 +638,7 @@ function install_package() {
 
     if check_binary "$bin_name" true; then
         script_exit \
-            "Try installing it manually." 1
+            "Error installing package: $package_name. Try install manually." 1
     fi
 
     return 0
