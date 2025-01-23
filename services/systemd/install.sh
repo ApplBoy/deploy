@@ -219,6 +219,8 @@ function commit_and_pr_workflow_dispatch() {
 
     add_on_dispatch_rule "$workflow_file"
 
+    old_pwd=$PWD
+    cd "$(dirname "$workflow_file")" || return 1
     git add "$workflow_file"
     git commit -m "feat: Add on:workflow_dispatch rule"
     git branch feat/add-on-workflow_dispatch-rule
@@ -228,6 +230,7 @@ function commit_and_pr_workflow_dispatch() {
     # Create PR
     gh pr create --title "feat: Add on:workflow_dispatch rule" \
         --body "Add on:workflow_dispatch rule to the workflow file: $workflow_file"
+    cd "$old_pwd" || return 1
 }
 
 # DESC: Get workflow name from the workflow file
