@@ -6,146 +6,146 @@
 # ARGS: $1 - The service file
 # OUTS: None
 function parse_service_file() {
-    local file_path="$1"
+	local file_path="$1"
 
-    if [[ ! -f "$file_path" ]]; then
-        # shellcheck disable=SC2154
-        echo "${fg_yellow}File not found: $file_path"
-        return 1
-    fi
+	if [[ ! -f "$file_path" ]]; then
+		# shellcheck disable=SC2154
+		echo "${fg_yellow}File not found: $file_path"
+		return 1
+	fi
 
-    local file_dir temp_file
-    file_dir=$(dirname "$file_path")
-    temp_file="${file_dir}/.temp_$(basename "$file_path")"
+	local file_dir temp_file
+	file_dir=$(dirname "$file_path")
+	temp_file="${file_dir}/.temp_$(basename "$file_path")"
 
-    envsubst <"$file_path" >"$temp_file"
+	envsubst <"$file_path" >"$temp_file"
 }
 
 # DESC: Enable a single service
 # ARGS: $1 - The service name
 # OUTS: None
 function enable_service() {
-    if [[ -z "$1" ]]; then
-        echo "Service name not provided."
-        return 1
-    fi
-    local service_name
-    service_name="$1"
+	if [[ -z "$1" ]]; then
+		echo "Service name not provided."
+		return 1
+	fi
+	local service_name
+	service_name="$1"
 
-    if [[ -z "$enable_service" ]]; then
-        echo "Enable command not set."
-        return 1
-    fi
+	if [[ -z "$enable_service" ]]; then
+		echo "Enable command not set."
+		return 1
+	fi
 
-    # GLOB: s/@/$service_name/ in $enable_cmd
-    # shellcheck disable=SC2154
-    run_as_root "${enable_cmd/@/$service_name}"
+	# GLOB: s/@/$service_name/ in $enable_cmd
+	# shellcheck disable=SC2154
+	run_as_root eval "${enable_cmd/@/$service_name}"
 }
 
 # DESC: Start a single service
 # ARGS: $1 - The service name
 # OUTS: None
 function start_service() {
-    if [[ -z "$1" ]]; then
-        echo "Service name not provided."
-        return 1
-    fi
-    local service_name
-    service_name="$1"
+	if [[ -z "$1" ]]; then
+		echo "Service name not provided."
+		return 1
+	fi
+	local service_name
+	service_name="$1"
 
-    if [[ -z "$start_cmd" ]]; then
-        echo "Start command not set."
-        return 1
-    fi
+	if [[ -z "$start_cmd" ]]; then
+		echo "Start command not set."
+		return 1
+	fi
 
-    # GLOB: s/@/$service_name/ in $start_cmd
-    # shellcheck disable=SC2154
-    run_as_root "${start_cmd/@/$service_name}"
+	# GLOB: s/@/$service_name/ in $start_cmd
+	# shellcheck disable=SC2154
+	run_as_root eval "${start_cmd/@/$service_name}"
 }
 
 # DESC: Reload the init daemons
 # ARGS: None
 # OUTS: None
 function reload_daemons() {
-    if [[ -z "$reload_cmd" ]]; then
-        echo "Reload command not set."
-        return 1
-    fi
+	if [[ -z "$reload_cmd" ]]; then
+		echo "Reload command not set."
+		return 1
+	fi
 
-    # shellcheck disable=SC2154
-    run_as_root "$reload_cmd"
+	# shellcheck disable=SC2154
+	run_as_root eval "$reload_cmd"
 }
 
 # DESC: Install a single service
 # ARGS: $1 - The service path
 # OUTS: None
 function install_service() {
-    local service_name service_path service_dir
-    service_path="$1"
-    service_dir=$(dirname "$service_path")
-    service_name=$(basename "$service_path")
+	local service_name service_path service_dir
+	service_path="$1"
+	service_dir=$(dirname "$service_path")
+	service_name=$(basename "$service_path")
 
-    if [[ ! -f "$service_path" ]]; then
-        echo "Service does not exist: ${service_path}"
-        return 1
-    fi
-    echo "Installing service: ${service_name}"
+	if [[ ! -f "$service_path" ]]; then
+		echo "Service does not exist: ${service_path}"
+		return 1
+	fi
+	echo "Installing service: ${service_name}"
 
-    parse_service_file "$service_path"
+	parse_service_file "$service_path"
 
-    local temp_service="${service_dir}/.temp_${service_name}"
-    # shellcheck disable=SC2154
-    local dest_service="${services_folder}/${service_name}"
+	local temp_service="${service_dir}/.temp_${service_name}"
+	# shellcheck disable=SC2154
+	local dest_service="${services_folder}/${service_name}"
 
-    run_as_root cp "$temp_service" "$dest_service"
+	run_as_root cp "$temp_service" "$dest_service"
 
-    if [[ ! -f "$dest_service" ]]; then
-        # shellcheck disable=SC2154
-        script_exit "${fg_red}Failed to copy service: ${service_path}" 1
-    fi
+	if [[ ! -f "$dest_service" ]]; then
+		# shellcheck disable=SC2154
+		script_exit "${fg_red}Failed to copy service: ${service_path}" 1
+	fi
 
-    reload_daemons
-    enable_service "$service_name"
-    start_service "$service_name"
+	reload_daemons
+	enable_service "$service_name"
+	start_service "$service_name"
 }
 
 # DESC: Get the to install services
 # ARGS: None
 # OUTS: None
 function get_services() {
-    declare -A services_map=()
+	declare -A services_map=()
 
-    # shellcheck disable=SC2154
-    for file in "$script_dir/services/$init_name"/*/*.{service,timer}; do
-        [[ -e "$file" ]] || continue # Skip if no matching files
-        service_name=$(basename "$file")
-        services_map["$service_name"]="$file"
-    done
+	# shellcheck disable=SC2154
+	for file in "$script_dir/services/$init_name"/*/*.{service,timer}; do
+		[[ -e "$file" ]] || continue # Skip if no matching files
+		service_name=$(basename "$file")
+		services_map["$service_name"]="$file"
+	done
 
-    if [[ ${#services_map[@]} -eq 0 ]]; then
-        echo "No services to install."
-        return 1
-    fi
+	if [[ ${#services_map[@]} -eq 0 ]]; then
+		echo "No services to install."
+		return 1
+	fi
 
-    for service_name in "${!services_map[@]}"; do
-        install_service "${services_map[$service_name]}"
-    done
-    return 0
+	for service_name in "${!services_map[@]}"; do
+		install_service "${services_map[$service_name]}"
+	done
+	return 0
 }
 
 # DESC: Systemd services installer
 # ARGS: None
 # OUTS: None
 function install() {
-    # Check if the services folder exists
-    if [[ ! -d "$services_folder" ]]; then
-        # shellcheck disable=SC2154
-        script_exit "${fg_red}Services folder does not exist: \
+	# Check if the services folder exists
+	if [[ ! -d "$services_folder" ]]; then
+		# shellcheck disable=SC2154
+		script_exit "${fg_red}Services folder does not exist: \
             $services_folder" 1
-    fi
+	fi
 
-    get_services
-    # ----[ INSTALLED ]-------------------------------------------------- #
+	get_services
+	# ----[ INSTALLED ]-------------------------------------------------- #
 }
 
 # vim: syntax=sh cc=80 tw=79 ts=4 sw=4 sts=4 et sr
