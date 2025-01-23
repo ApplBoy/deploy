@@ -484,6 +484,7 @@ function check_systemd() {
 # ARGS: $1 (required): The init configuration file
 # OUTS: service_folder: The path to the services folder
 # 		  init_name: Init name for selecting the service type
+# 		  enable_cmd: The command to enable the service
 # 		  start_cmd: The command to start the service
 # 		  			  (defaults to "service @ start")
 # 		  stop_cmd: The command to stop the service
@@ -512,6 +513,8 @@ function config_custom_init() {
     # Default values
     export services_folder=${services_folder}
     export init_name=${init_name}
+    export enable_cmd=${enable_cmd:-"service @ enable"}
+    export disable_cmd=${disable_cmd:-"service @ disable"}
     export start_cmd=${start_cmd:-"service @ start"}
     export stop_cmd=${stop_cmd:-"service @ stop"}
     export reload_cmd=${reload_cmd:-"service reload"}
@@ -527,6 +530,8 @@ function config_custom_init() {
 function config_systemd() {
     export services_folder="/etc/systemd/system"
     export init_name="systemd"
+    export enable_cmd="systemctl enable @"
+    export disable_cmd="systemctl disable @"
     export start_cmd="systemctl start @"
     export stop_cmd="systemctl stop @"
     export reload_cmd="systemctl reload-daemon"

@@ -76,6 +76,61 @@ function remove_service() {
     fi
 }
 
+# DESC: Stop a single service
+# ARGS: $1 - The service name
+# OUTS: None
+function stop_service() {
+    if [[ -z "$1" ]]; then
+        echo "Service name not provided."
+        return 1
+    fi
+    local service_name
+    service_name=$1
+
+    if [[ -z "$stop_cmd" ]]; then
+        echo "Stop command not set."
+        return 1
+    fi
+
+    # GLOB: s/@/$service_name/ in $stop_cmd
+    # shellcheck disable=SC2154
+    run_as_root "${stop_cmd/@/$service_name}"
+}
+
+# DESC: Disable a single service
+# ARGS: $1 - The service name
+# OUTS: None
+function disable_service() {
+    if [[ -z "$1" ]]; then
+        echo "Service name not provided."
+        return 1
+    fi
+    local service_name
+    service_name=$1
+
+    if [[ -z "$disable_cmd" ]]; then
+        echo "Disable command not set."
+        return 1
+    fi
+
+    # GLOB: s/@/$service_name/ in $disable_cmd
+    # shellcheck disable=SC2154
+    run_as_root "${disable_cmd/@/$service_name}"
+}
+
+# DESC: Reload the init daemons
+# ARGS: None
+# OUTS: None
+function reload_daemons() {
+    if [[ -z "$reload_cmd" ]]; then
+        echo "Reload command not set."
+        return 1
+    fi
+
+    # shellcheck disable=SC2154
+    run_as_root "$reload_cmd"
+}
+
 # DESC: Remove function called by the main script
 # ARGS: None
 # OUTS: None
@@ -86,8 +141,13 @@ function remove_services() {
     services=("${services_files[@]}" "${timers_files[@]}")
 
     for service in "${services[@]}"; do
+        service_name=$(basename "$service")
+        stop_service "$service_name"
+        disable_service "$service_name"
         remove_service "$service"
     done
+
+    reload_daemons
 
     # ----[ SERVICES REMOVED ]-------------------------------------------- #
     echo "${fg_green}Services removed.${ta_none}"

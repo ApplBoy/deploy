@@ -21,6 +21,61 @@ function parse_service_file() {
     envsubst <"$file_path" >"$temp_file"
 }
 
+# DESC: Enable a single service
+# ARGS: $1 - The service name
+# OUTS: None
+function enable_service() {
+    if [[ -z "$1" ]]; then
+        echo "Service name not provided."
+        return 1
+    fi
+    local service_name
+    service_name="$1"
+
+    if [[ -z "$enable_service" ]]; then
+        echo "Enable command not set."
+        return 1
+    fi
+
+    # GLOB: s/@/$service_name/ in $enable_cmd
+    # shellcheck disable=SC2154
+    run_as_root "${enable_cmd/@/$service_name}"
+}
+
+# DESC: Start a single service
+# ARGS: $1 - The service name
+# OUTS: None
+function start_service() {
+    if [[ -z "$1" ]]; then
+        echo "Service name not provided."
+        return 1
+    fi
+    local service_name
+    service_name="$1"
+
+    if [[ -z "$start_cmd" ]]; then
+        echo "Start command not set."
+        return 1
+    fi
+
+    # GLOB: s/@/$service_name/ in $start_cmd
+    # shellcheck disable=SC2154
+    run_as_root "${start_cmd/@/$service_name}"
+}
+
+# DESC: Reload the init daemons
+# ARGS: None
+# OUTS: None
+function reload_daemons() {
+    if [[ -z "$reload_cmd" ]]; then
+        echo "Reload command not set."
+        return 1
+    fi
+
+    # shellcheck disable=SC2154
+    run_as_root "$reload_cmd"
+}
+
 # DESC: Install a single service
 # ARGS: $1 - The service path
 # OUTS: None
@@ -46,6 +101,10 @@ function install_service() {
         # shellcheck disable=SC2154
         script_exit "${fg_red}Failed to copy service: ${service_path}" 1
     fi
+
+    reload_daemons
+    enable_service "$service_name"
+    start_service "$service_name"
 }
 
 # DESC: Get the to install services

@@ -3,9 +3,9 @@
 # THIS IS NOT A SCRIPT TO BE RUNNED, IT IS A SNIPPET TO BE USED IN OTHER
 # SCRIPTS AS SOURCE
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-	echo "This script is not to be runned, it is a snippet to be used as" \
-		" source for your custom init config."
-	exit 1
+    echo "This script is not to be runned, it is a snippet to be used as" \
+        " source for your custom init config."
+    exit 1
 fi
 
 # =========================================================================== #
@@ -21,6 +21,17 @@ fi
 # ./services/
 #
 # export init_name="openrc"
+#
+#
+# enable_cmd - The command to enable the service (@ to be replaced by the
+# service name)
+#
+# export enable_cmd="rc-update add @ default"
+#
+# disable_cmd - The command to disable the service (@ to be replaced by the
+# service name)
+#
+# export disable_cmd="rc-update del @ default"
 #
 #
 # start_cmd - The command to start the service (@ to be replaced by the service
