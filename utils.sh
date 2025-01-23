@@ -7,8 +7,6 @@
 #       Runner
 #       $REQUIREMENTS_FILE: The path to the requirements file
 function shared_init() {
-    echo "Script Dir: $script_dir"
-
     # shellcheck disable=SC2154
     readonly CUSTOM_INIT_CONFIG=${CUSTOM_INIT_CONFIG:-"$script_dir/init.sh"}
 
