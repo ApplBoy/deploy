@@ -8,3 +8,4 @@ python3
 fzf
 sudo
 gettext-base:envsubst
+jq
