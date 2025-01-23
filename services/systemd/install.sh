@@ -183,7 +183,6 @@ function add_on_dispatch_rule() {
     { print $0 }
     ' "$workflow_file" >"$workflow_file.tmp"
 
-
     rule_exists=$(find_on_dispatch_rule "$workflow_file.tmp")
 
     if [[ "$rule_exists" != "false" ]]; then
@@ -222,7 +221,7 @@ function commit_and_pr_workflow_dispatch() {
 
     # Create PR
     gh pr create --title "feat: Add on:workflow_dispatch rule" \
-    --body "Add on:workflow_dispatch rule to the workflow file: $workflow_file"
+        --body "Add on:workflow_dispatch rule to the workflow file: $workflow_file"
 }
 
 # DESC: Dispatch actions on reboot
@@ -242,7 +241,7 @@ function install_actions_dispatch_on_reboot() {
         echo "No actions file found: $DOCKER_ACTION_FILE"
         return 1
     fi
-    
+
     # Find on dispatch rule in the workflow file
     rule_exists=$(find_on_dispatch_rule "$project_dir/$DOCKER_ACTION_FILE")
     if [[ "$rule_exists" == "false" ]]; then
@@ -250,31 +249,31 @@ function install_actions_dispatch_on_reboot() {
         echo "${fg_yellow}No on:workflow_dispatch rule found in the workflow\
 file.${ta_none}"
         read -rp "Do you want to add it? [y/N]: " add_rule
-        if [[ "$add_rule" =~ ^[Yy][Ee][Ss]$ ]]; then
+        if [[ "$add_rule" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]; then
             echo "Adding on:workflow_dispatch rule to the workflow file."
             commit_and_pr_workflow_dispatch "$project_dir/$DOCKER_ACTION_FILE"
         else
             echo "${fg_yellow}Skipping the on:workflow_dispatch rule."
             # shellcheck disable=SC2154
             echo "${ta_none}${bg_blue}You can add it manually to the workflow"
-            echo "file: $DOCKER_ACTION_FILE"
-            echo "on: workflow_dispatch:${ta_none}"
+            echo "file: $DOCKER_ACTION_FILE${ta_none}"
+            echo "${bg_blue}on: workflow_dispatch:${ta_none}"
         fi
 
     fi
 
     # ----[ GH DISPATCHED ]---------------------------------------------- #
     payload="
-
 # CUSTSOM #
 old_pwd=\"\$(pwd)\"
-if [[ -d ${project_dir} ]]; then
+if [[ -d \"${project_dir}\" ]]; then
         cd \"${project_dir}\" &&
         git pull
-        gh workflow run \"${}\" &
+        gh workflow run \"workflow_name_or_id\" &
         cd \"\$old_pwd\"
 fi
-# CUSTSOM #"
+# CUSTSOM #
+"
 
     # shellcheck disable=SC2154
     actions_run_file="$script_dir/../actions-runner/run.sh"
