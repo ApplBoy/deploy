@@ -133,6 +133,8 @@ function find_on_dispatch_rule() {
 # OUTS: Boolean if the diff is as the user expects (STDOUT)
 function check_diff() {
     local workflow_file="$1"
+    local temp_file="$2"
+    local diff_output
 
     if [[ ! -f "$workflow_file" ]]; then
         echo "Workflow file not found: $workflow_file"
@@ -140,14 +142,12 @@ function check_diff() {
     fi
 
     # Run diff and suppress its exit code
-    diff_output=$(diff -u "$workflow_file" "$2" || true)
+    diff_output=$(diff -u "$workflow_file" "$temp_file") || true
 
     if [[ -n "$diff_output" ]]; then
-        # Display the diff to the user
         echo "The following differences were found:"
         echo "$diff_output"
 
-        # Prompt the user
         read -rp "Is this diff as expected? [y/N]: " continue_diff
         if [[ "$continue_diff" =~ ^[Yy][Ee][Ss]$ ]]; then
             echo "true"
@@ -155,7 +155,6 @@ function check_diff() {
             echo "false"
         fi
     else
-        # No differences found
         echo "true"
     fi
 }
