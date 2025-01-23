@@ -301,8 +301,6 @@ fi
 # CUSTSOM #
 "
 
-        # Create temp file to annex the payload
-
         temp_file="${actions_run_file}.tmp"
         cp "$actions_run_file" "$temp_file"
         # ----[ PAYLOAD ]--------------------------------------------- #
@@ -312,11 +310,11 @@ fi
             return 1
         fi
 
-        # Annex the payload after the first line
-
-        #sed -i "1 a $payload" "$temp_file"
         awk -v payload="$payload" 'NR==1 {print; print payload; next} 1' \
-            "$actions_run_file" >"$temp_file"
+            "$actions_run_file" >"$temp_file" || {
+            echo "Failed to append payload to temp file."
+            return 1
+        }
 
         bash -n "$temp_file" || {
             echo "Syntax check failed for ${temp_file}"
@@ -326,8 +324,12 @@ fi
 
         mv "$temp_file" "$actions_run_file"
 
-        # Check if the payload was annexed
-        sed -n '/# CUSTSOM #/p' "$actions_run_file" || return 1
+        if ! grep -q '# CUSTSOM #' "$actions_run_file"; then
+            echo "Payload was not annexed to $actions_run_file"
+            return 1
+        fi
+
+        echo "Payload successfully annexed to $actions_run_file."
     fi
 
     # ----[ INSTALLED ]-------------------------------------------------- #
