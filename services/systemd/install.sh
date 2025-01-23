@@ -234,9 +234,8 @@ function get_workflow_name() {
         return 1
     fi
 
-    # ^name: <WORKFLOW_NAME WORFLOW_NAME ...>
     workflow_name=$(awk '/^name:/ {for (i=2; i<=NF; i++) printf "%s ", $i; print ""}' \
-        "$workflow_file")
+        "$workflow_file" | sed 's/[[:space:]]*$//')
     echo "$workflow_name"
 }
 
