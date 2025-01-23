@@ -858,7 +858,7 @@ function setup_firewall_rules() {
     firewalld)
         for port in "${receive_ports[@]}"; do
             echo "firewall-cmd --zone=public --add-port=\"$port/tcp\" \
-                --permanent"
+--permanent"
             run_as_root firewall-cmd --zone=public --add-port="$port/tcp" \
                 --permanent
         done
@@ -891,7 +891,7 @@ function setup_firewall_rules() {
     firewalld)
         for port in "${send_ports[@]}"; do
             echo "firewall-cmd --zone=public --add-port=\"$port/tcp\" \
-                --permanent"
+--permanent"
             run_as_root firewall-cmd --zone=public --add-port="$port/tcp" \
                 --permanent
         done
