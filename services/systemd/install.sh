@@ -279,7 +279,8 @@ file.${ta_none}"
     fi
 
     # ----[ GH DISPATCHED ]---------------------------------------------- #
-    payload_alredy_exists=$(sed -n '/# CUSTSOM #/p' "$actions_run_file" &&
+    payload_alredy_exists=$(sed -n '/# CUSTSOM #/p' \
+        "$script_dir/../actions-runner/run.sh" &&
         echo "true" || echo "false")
 
     if [[ "$payload_alredy_exists" == "false" ]]; then
