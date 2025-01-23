@@ -139,8 +139,9 @@ function check_diff() {
         return 1
     fi
 
-    diff=$(diff -u "$workflow_file" "$2")
-    diff_exit_code=$?
+    diff -u "$workflow_file" "$2" >"$workflow_file.diff" || true
+    diff=$(cat "$workflow_file.diff")
+    rm -f "$workflow_file.diff"
 
     if [[ -n "$diff" ]]; then
         echo "false"
