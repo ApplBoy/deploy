@@ -40,8 +40,8 @@ ${fg_cyan-}
     ▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃▃${fg_cyan-}
 
     GitHub Actions Runner & Environment Setup Script
-        Author: Saulo José de Lucas Silva
-              License: MIT (c) 2025
+           Author: Saulo José de Lucas Silva
+                License: MIT (c) 2025
 
 EOF
 }
