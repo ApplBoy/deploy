@@ -751,13 +751,18 @@ function get_firewall_binary() {
     local firewall_bin
     if command -v iptables &>/dev/null; then
         firewall_bin=("iptables")
-    elif command -v nft &>/dev/null; then
+    fi
+    if command -v nft &>/dev/null; then
         firewall_bin=(firewall_bin "nft")
-    elif command -v firewalld &>/dev/null; then
+    fi
+    if command -v firewalld &>/dev/null; then
         firewall_bin=(firewall_bin "firewalld")
-    elif command -v ufw &>/dev/null; then
+    fi
+    if command -v ufw &>/dev/null; then
         firewall_bin=(firewall_bin "ufw")
-    else
+    fi
+
+    if [[ ${#firewall_bin[@]} -eq 0 ]]; then
         script_exit 'No firewall binary found.' 1
     fi
 
