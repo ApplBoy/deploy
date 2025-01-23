@@ -753,13 +753,13 @@ function get_firewall_binary() {
         firewall_bin=("iptables")
     fi
     if command -v nft &>/dev/null; then
-        firewall_bin=(firewall_bin "nft")
+        firewall_bin+=("nft")
     fi
     if command -v firewalld &>/dev/null; then
-        firewall_bin=(firewall_bin "firewalld")
+        firewall_bin+=("firewalld")
     fi
     if command -v ufw &>/dev/null; then
-        firewall_bin=(firewall_bin "ufw")
+        firewall_bin+=("ufw")
     fi
 
     if [[ ${#firewall_bin[@]} -eq 0 ]]; then
