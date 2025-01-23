@@ -139,22 +139,24 @@ function check_diff() {
         return 1
     fi
 
-    diff -u "$workflow_file" "$2" >"$workflow_file.diff" || true
-    diff=$(cat "$workflow_file.diff")
-    rm -f "$workflow_file.diff"
+    # Run diff and suppress its exit code
+    diff_output=$(diff -u "$workflow_file" "$2" || true)
 
-    if [[ -n "$diff" ]]; then
-        echo "false"
-    else
-        # Ask the user if the diff is as expected
-        echo "Is the diff as expected?"
-        echo "$diff"
-        read -rp "Continue? [y/N]: " continue_diff
+    if [[ -n "$diff_output" ]]; then
+        # Display the diff to the user
+        echo "The following differences were found:"
+        echo "$diff_output"
+
+        # Prompt the user
+        read -rp "Is this diff as expected? [y/N]: " continue_diff
         if [[ "$continue_diff" =~ ^[Yy][Ee][Ss]$ ]]; then
             echo "true"
         else
             echo "false"
         fi
+    else
+        # No differences found
+        echo "true"
     fi
 }
 
