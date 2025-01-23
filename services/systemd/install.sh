@@ -224,6 +224,22 @@ function commit_and_pr_workflow_dispatch() {
         --body "Add on:workflow_dispatch rule to the workflow file: $workflow_file"
 }
 
+# DESC: Get workflow name from the workflow file
+# ARGS: $1 - The workflow file
+# OUTS: The workflow name (STDOUT)
+function get_workflow_name() {
+    local workflow_file="$1"
+    if [[ ! -f "$workflow_file" ]]; then
+        echo "Workflow file not found: $workflow_file"
+        return 1
+    fi
+
+    # ^name: <WORKFLOW_NAME WORFLOW_NAME ...>
+    workflow_name=$(awk '/^name:/ {for (i=2; i<=NF; i++) printf "%s ", $i; print ""}' \
+        "$workflow_file")
+    echo "$workflow_name"
+}
+
 # DESC: Dispatch actions on reboot
 # ARGS: None
 # OUTS: None
@@ -249,7 +265,7 @@ function install_actions_dispatch_on_reboot() {
         echo "${fg_yellow}No on:workflow_dispatch rule found in the workflow\
 file.${ta_none}"
         read -rp "Do you want to add it? [y/N]: " add_rule
-        if [[ "$add_rule" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]; then
+        if [[ "$add_rule" =~ ^([Yy]|[Ss]|[Yy][Ee][Ss])$ ]]; then
             echo "Adding on:workflow_dispatch rule to the workflow file."
             commit_and_pr_workflow_dispatch "$project_dir/$DOCKER_ACTION_FILE"
         else
@@ -263,41 +279,56 @@ file.${ta_none}"
     fi
 
     # ----[ GH DISPATCHED ]---------------------------------------------- #
-    payload="
+    payload_alredy_exists=$(sed -n '/# CUSTSOM #/p' "$actions_run_file" &&
+        echo "true" || echo "false")
+
+    if [[ "$payload_alredy_exists" == "false" ]]; then
+        echo "Adding actions dispatch on reboot to the run.sh file."
+
+        workflow_name=$(get_workflow_name "$project_dir/$DOCKER_ACTION_FILE")
+        payload="
 # CUSTSOM #
 old_pwd=\"\$(pwd)\"
 if [[ -d \"${project_dir}\" ]]; then
         cd \"${project_dir}\" &&
         git pull
-        gh workflow run \"workflow_name_or_id\" &
+        gh workflow run \"${workflow_name}\" &
         cd \"\$old_pwd\"
 fi
 # CUSTSOM #
 "
 
-    # shellcheck disable=SC2154
-    actions_run_file="$script_dir/../actions-runner/run.sh"
+        # shellcheck disable=SC2154
+        actions_run_file="$script_dir/../actions-runner/run.sh"
 
-    # Create temp file to annex the payload
+        # Create temp file to annex the payload
 
-    temp_file="${actions_run_file}.tmp"
-    cp "$actions_run_file" "$temp_file"
-    # ----[ PAYLOAD ]---------------------------------------------------- #
+        temp_file="${actions_run_file}.tmp"
+        cp "$actions_run_file" "$temp_file"
+        # ----[ PAYLOAD ]--------------------------------------------- #
 
-    if [[ ! -f "$temp_file" ]]; then
-        echo "Failed to create temp file: $temp_file"
-        return 1
+        if [[ ! -f "$temp_file" ]]; then
+            echo "Failed to create temp file: $temp_file"
+            return 1
+        fi
+
+        # Annex the payload after the first line
+
+        #sed -i "1 a $payload" "$temp_file"
+        awk -v payload="$payload" 'NR==1 {print; print payload; next} 1' \
+            "$actions_run_file" >"$temp_file"
+
+        bash -n "$temp_file" || {
+            echo "Syntax check failed for ${temp_file}"
+            rm -f "$temp_file"
+            return 1
+        }
+
+        mv "$temp_file" "$actions_run_file"
+
+        # Check if the payload was annexed
+        sed -n '/# CUSTSOM #/p' "$actions_run_file" || return 1
     fi
-
-    # Annex the payload after the first line
-
-    sed -i "1 a $payload" "$temp_file"
-    bash -n "$temp_file" || return 1
-
-    mv "$temp_file" "$actions_run_file"
-
-    # Check if the payload was annexed
-    sed -n '/# CUSTSOM #/p' "$actions_run_file" || return 1
 
     # ----[ INSTALLED ]-------------------------------------------------- #
     echo "Actions dispatch on reboot installed."

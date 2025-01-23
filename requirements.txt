@@ -9,3 +9,4 @@ fzf
 sudo
 gettext-base:envsubst
 jq
+awk
