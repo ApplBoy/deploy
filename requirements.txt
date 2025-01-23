@@ -6,3 +6,5 @@ gzip
 gh-cli:gh
 python3
 fzf
+sudo
+gettext-base:envsubst

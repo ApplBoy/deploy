@@ -183,17 +183,17 @@ function setup_nginx() {
 # NOTE: It won't setup the firewall if is AWS, GCP or Azure, and if setted in
 # the environment variable FIREWALL_SETUP=false or if the user
 function setup_firewall() {
-    if [[ -n "$FIREWALL_SETUP" && "$FIREWALL_SETUP" == "false" ]]; then
+    if [[ "${FIREWALL_SETUP:-}" == "false" ]]; then
         echo "Firewall setup is disabled."
         return 0
     fi
 
-    if [[ -n "$AWS_REGION" || -n "$GCP_REGION" || -n "$AZURE_REGION" ]]; then
+    if [[ -n "${AWS_REGION:-}" || -n "${GCP_REGION:-}" || -n "${AZURE_REGION:-}" ]]; then
         echo "Firewall setup is disabled in cloud environments."
         return 0
     fi
 
-    if [[ -n "$FIREWALL_SETUP" && "$FIREWALL_SETUP" == "true" ]]; then
+    if [[ "${FIREWALL_SETUP:-}" == "true" ]]; then
         echo "Setting up the firewall."
     else
         read -r -p "${ta_bold}Do you want to setup the firewall? [y/N] \
@@ -208,7 +208,7 @@ function setup_firewall() {
 
     local bin
 
-    bin=get_firewall_binary
+    bin=$(get_firewall_binary)
     if [[ -z "$bin" ]]; then
         script_exit "${fg_red}Firewall binary not found.${ta_none}" 1
     fi

@@ -534,7 +534,7 @@ function config_systemd() {
     export disable_cmd="systemctl disable @"
     export start_cmd="systemctl start @"
     export stop_cmd="systemctl stop @"
-    export reload_cmd="systemctl reload-daemon"
+    export reload_cmd="systemctl daemon-reload"
 }
 
 # DESC: Get system distro name
@@ -635,6 +635,9 @@ function install_package() {
         script_exit "Unknown package manager: $package_manager" 1
         ;;
     esac
+
+    # Reload the shell to ensure the new binary is in the PATH
+    hash -r
 
     if check_binary "$bin_name" true; then
         script_exit \
@@ -786,30 +789,27 @@ function read_firewall_rules() {
         script_exit "File not found: $rules_file" 1
     fi
 
-    declare -A port_map
+    local -a receive_ports_array=()
+    local -a send_ports_array=()
 
     while IFS= read -r line; do
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*$ ]] && continue
+
         if [[ $line =~ ^RECEIVE ]]; then
-            port_map["RECEIVE"]+=" $(echo "${line#RECEIVE}" | tr -d ' ' | tr ',' ' ')"
+            IFS=',' read -ra ports <<<"${line#RECEIVE}"
+            receive_ports_array+=("${ports[@]}")
         elif [[ $line =~ ^SEND ]]; then
-            port_map["SEND"]+=" $(echo "${line#SEND}" | tr -d ' ' | tr ',' ' ')"
+            IFS=',' read -ra ports <<<"${line#SEND}"
+            send_ports_array+=("${ports[@]}")
         elif [[ $line =~ ^# ]]; then
             continue
-        # IGNORE EMPTY LINES AND SPACES/INDENTATION
-        elif [[ -z $line ]]; then
-            continue
-        elif [[ $line =~ ^\s+$ ]]; then
-            continue
         else
-            script_exit "${fg_red}Invalid port rule: $line" 1
+            script_exit "Invalid port rule: $line" 1
         fi
     done <"$rules_file"
 
-    port_map["RECEIVE"]=$(echo "${port_map["RECEIVE"]}" | xargs)
-    port_map["SEND"]=$(echo "${port_map["SEND"]}" | xargs)
-
-    receive_ports=("${port_map["RECEIVE"]}")
-    send_ports=("${port_map["SEND"]}")
+    receive_ports=("${receive_ports_array[@]}")
+    send_ports=("${send_ports_array[@]}")
 }
 
 # DESC: Set rules on the selected firewall
@@ -825,14 +825,12 @@ function setup_firewall_rules() {
 
     read_firewall_rules "$script_dir/ports.txt"
 
-    # Helper function to join arrays with a delimiter (e.g., comma)
     join_by() {
         local IFS="$1"
         shift
         echo "$*"
     }
 
-    # Convert arrays to appropriate formats
     local receive_ports_csv send_ports_csv
     receive_ports_csv=$(join_by ',' "${receive_ports[@]}")
     send_ports_csv=$(join_by ',' "${send_ports[@]}")

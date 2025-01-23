@@ -81,9 +81,9 @@ function reload_daemons() {
 # OUTS: None
 function install_service() {
     local service_name service_path service_dir
-    service_dir=$(dirname "$1")
-    service_name=$(basename "$1")
     service_path="$1"
+    service_dir=$(dirname "$service_path")
+    service_name=$(basename "$service_path")
 
     if [[ ! -f "$service_path" ]]; then
         echo "Service does not exist: ${service_path}"
@@ -93,11 +93,13 @@ function install_service() {
 
     parse_service_file "$service_path"
 
+    local temp_service="${service_dir}/.temp_${service_name}"
     # shellcheck disable=SC2154
-    run_as_root cp "$service_dir/.temp_${service_name} \
-        ${services_folder}/${service_name}"
+    local dest_service="${services_folder}/${service_name}"
 
-    if [[ ! -f "${services_folder}/$(basename "$service_path")" ]]; then
+    run_as_root cp "$temp_service" "$dest_service"
+
+    if [[ ! -f "$dest_service" ]]; then
         # shellcheck disable=SC2154
         script_exit "${fg_red}Failed to copy service: ${service_path}" 1
     fi
@@ -111,20 +113,22 @@ function install_service() {
 # ARGS: None
 # OUTS: None
 function get_services() {
-    # Get the services to install
-    services_files=("$script_dir/services/$init_name"/*.service)
-    timers_files=("$script_dir/services/$init_name"/*.timer)
-    services=("${services_files[@]}" "${timers_files[@]}")
+    declare -A services_map=()
 
-    if [[ ${#services[@]} -eq 0 ]]; then
+    # shellcheck disable=SC2154
+    for file in "$script_dir/services/$init_name"/*/*.{service,timer}; do
+        [[ -e "$file" ]] || continue # Skip if no matching files
+        service_name=$(basename "$file")
+        services_map["$service_name"]="$file"
+    done
+
+    if [[ ${#services_map[@]} -eq 0 ]]; then
         echo "No services to install."
         return 1
     fi
 
-    for service in "${services[@]}"; do
-        service_name=$(basename "$service")
-        service_name="${service_name%.*}"
-        install_service "$service_name"
+    for service_name in "${!services_map[@]}"; do
+        install_service "${services_map[$service_name]}"
     done
     return 0
 }
