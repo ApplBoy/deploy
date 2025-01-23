@@ -279,8 +279,10 @@ file.${ta_none}"
     fi
 
     # ----[ GH DISPATCHED ]---------------------------------------------- #
+    # shellcheck disable=SC2154
+    actions_run_file="$script_dir/../actions-runner/run.sh"
     payload_alredy_exists=$(sed -n '/# CUSTSOM #/p' \
-        "$script_dir/../actions-runner/run.sh" &&
+        "$actions_run_file" &&
         echo "true" || echo "false")
 
     if [[ "$payload_alredy_exists" == "false" ]]; then
@@ -298,9 +300,6 @@ if [[ -d \"${project_dir}\" ]]; then
 fi
 # CUSTSOM #
 "
-
-        # shellcheck disable=SC2154
-        actions_run_file="$script_dir/../actions-runner/run.sh"
 
         # Create temp file to annex the payload
 
