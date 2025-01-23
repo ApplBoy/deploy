@@ -140,6 +140,7 @@ function check_diff() {
     fi
 
     diff=$(diff -u "$workflow_file" "$2")
+    diff_exit_code=$?
 
     if [[ -n "$diff" ]]; then
         echo "false"
