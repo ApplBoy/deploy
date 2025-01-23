@@ -281,11 +281,16 @@ file.${ta_none}"
     # ----[ GH DISPATCHED ]---------------------------------------------- #
     # shellcheck disable=SC2154
     actions_run_file=$(realpath "$script_dir/../actions-runner/run.sh")
-    payload_alredy_exists=$(sed -n '/# CUSTSOM #/p' \
-        "$actions_run_file" &&
-        echo "true" || echo "false")
 
-    if [[ "$payload_alredy_exists" == "false" ]]; then
+    local payload_already_exists
+
+    if grep -q "# CUSTSOM #" "$actions_run_file"; then
+        payload_already_exists="true"
+    else
+        payload_already_exists="false"
+    fi
+
+    if [[ "$payload_already_exists" == "false" ]]; then
         echo "Adding actions dispatch on reboot to the run.sh file."
 
         workflow_name=$(get_workflow_name "$project_dir/$DOCKER_ACTION_FILE")
@@ -301,39 +306,39 @@ fi
 # CUSTSOM #
 "
 
-        # temp_file="${actions_run_file}.tmp"
-        # cp "$actions_run_file" "$temp_file"
-        # # ----[ PAYLOAD ]--------------------------------------------- #
-        #
-        # if [[ ! -f "$temp_file" ]]; then
-        #     echo "Failed to create temp file: $temp_file"
-        #     return 1
-        # fi
-        #
-        # awk -v payload="$payload" 'NR==1 {print; print payload; next} 1' \
-        #     "$actions_run_file" >"$temp_file" || {
-        #     echo "Failed to append payload to temp file."
-        #     return 1
-        # }
-        #
-        # bash -n "$temp_file" || {
-        #     echo "Syntax check failed for ${temp_file}"
-        #     rm -f "$temp_file"
-        #     return 1
-        # }
-        #
-        # mv "$temp_file" "$actions_run_file"
-        #
-        # if ! grep -q '# CUSTSOM #' "$actions_run_file"; then
-        #     echo "Payload was not annexed to $actions_run_file"
-        #     return 1
-        # fi
-        #
-        # echo "Payload successfully annexed to $actions_run_file."
+        temp_file="${actions_run_file}.tmp"
+        cp "$actions_run_file" "$temp_file"
+        # ----[ PAYLOAD ]--------------------------------------------- #
+
+        if [[ ! -f "$temp_file" ]]; then
+            echo "Failed to create temp file: $temp_file"
+            return 1
+        fi
+
+        awk -v payload="$payload" 'NR==1 {print; print payload; next} 1' \
+            "$actions_run_file" >"$temp_file" || {
+            echo "Failed to append payload to temp file."
+            return 1
+        }
+
+        bash -n "$temp_file" || {
+            echo "Syntax check failed for ${temp_file}"
+            rm -f "$temp_file"
+            return 1
+        }
+
+        mv "$temp_file" "$actions_run_file"
+
+        if ! grep -q '# CUSTSOM #' "$actions_run_file"; then
+            echo "Payload was not annexed to $actions_run_file"
+            return 1
+        fi
+
+        echo "Payload successfully annexed to $actions_run_file."
         # F* this, just ask the user
 
-        echo "${gb_blue}Add the following payload to the run.sh file:${ta_none}"
-        echo "$payload"
+        # echo "${gb_blue}Add the following payload to the run.sh file:${ta_none}"
+        # echo "$payload"
 
     fi
 
