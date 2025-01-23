@@ -280,7 +280,7 @@ file.${ta_none}"
 
     # ----[ GH DISPATCHED ]---------------------------------------------- #
     # shellcheck disable=SC2154
-    actions_run_file="$script_dir/../actions-runner/run.sh"
+    actions_run_file=$(realpath "$script_dir/../actions-runner/run.sh")
     payload_alredy_exists=$(sed -n '/# CUSTSOM #/p' \
         "$actions_run_file" &&
         echo "true" || echo "false")
