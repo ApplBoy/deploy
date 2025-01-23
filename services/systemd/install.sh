@@ -137,16 +137,15 @@ function check_diff() {
     local diff_output
 
     if [[ ! -f "$workflow_file" ]]; then
-        echo "Workflow file not found: $workflow_file"
-        return 1
+        script_exit "Workflow file not found: $workflow_file" 1
     fi
 
     # Run diff and suppress its exit code
     diff_output=$(diff -u "$workflow_file" "$temp_file") || true
 
     if [[ -n "$diff_output" ]]; then
-        echo "The following differences were found:"
-        echo "$diff_output"
+        echo "The following differences were found:" >&2
+        echo "$diff_output" >&2
 
         read -rp "Is this diff as expected? [y/N]: " continue_diff
         if [[ "$continue_diff" =~ ^[Yy][Ee][Ss]$ ]]; then
