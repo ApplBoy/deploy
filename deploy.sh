@@ -230,7 +230,6 @@ function main() {
     setup_database
     setup_nginx
     setup_firewall
-    debug_all_functions
     script_exit 'Script completed successfully.' 0
 }
 

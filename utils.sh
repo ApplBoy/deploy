@@ -845,21 +845,27 @@ function setup_firewall_rules() {
     echo "Setting up receive ports: ${receive_ports[*]}"
     case "$firewall_bin" in
     iptables)
+        echo "iptables -A INPUT -p tcp -m multiport --dports \
+            $receive_ports_csv -j ACCEPT"
         run_as_root iptables -A INPUT -p tcp -m multiport --dports \
             "$receive_ports_csv" -j ACCEPT
         ;;
     nft)
+        echo "nft add rule inet filter input tcp dport { $receive_ports_csv } accept"
         run_as_root nft add rule inet filter input tcp dport \
             "{ $receive_ports_csv }" accept
         ;;
     firewalld)
         for port in "${receive_ports[@]}"; do
+            echo "firewall-cmd --zone=public --add-port=\"$port/tcp\" \
+                --permanent"
             run_as_root firewall-cmd --zone=public --add-port="$port/tcp" \
                 --permanent
         done
         ;;
     ufw)
         for port in "${receive_ports[@]}"; do
+            echo "ufw allow \"$port/tcp\""
             run_as_root ufw allow "$port/tcp"
         done
         ;;
@@ -872,21 +878,27 @@ function setup_firewall_rules() {
     echo "Setting up send ports: ${send_ports[*]}"
     case "$firewall_bin" in
     iptables)
+        echo "iptables -A OUTPUT -p tcp -m multiport --dports \
+            $send_ports_csv -j ACCEPT"
         run_as_root iptables -A OUTPUT -p tcp -m multiport --dports \
             "$send_ports_csv" -j ACCEPT
         ;;
     nft)
+        echo "nft add rule inet filter output tcp dport { $send_ports_csv } accept"
         run_as_root nft add rule inet filter output tcp dport \
             "{ $send_ports_csv }" accept
         ;;
     firewalld)
         for port in "${send_ports[@]}"; do
+            echo "firewall-cmd --zone=public --add-port=\"$port/tcp\" \
+                --permanent"
             run_as_root firewall-cmd --zone=public --add-port="$port/tcp" \
                 --permanent
         done
         ;;
     ufw)
         for port in "${send_ports[@]}"; do
+            echo "ufw allow out \"$port/tcp\""
             run_as_root ufw allow out "$port/tcp"
         done
         ;;
