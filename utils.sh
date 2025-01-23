@@ -472,7 +472,7 @@ function check_systemd() {
     fi
 
     systemd_folder="$([ -d /run/systemd/system ] && echo true || echo false)"
-    systemd_bin=$(command -v systemctl || true)
+    systemd_bin=$(command -v systemctl && true)
 
     systemd="$([ "$systemd_bin" != "" ] && [ "$systemd_folder" = true ] &&
         echo 'true' || echo 'false')"
