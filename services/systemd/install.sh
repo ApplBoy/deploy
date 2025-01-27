@@ -18,6 +18,8 @@ function parse_service_file() {
 	file_dir=$(dirname "$file_path")
 	temp_file="${file_dir}/.temp_$(basename "$file_path")"
 
+	project_dir=$(realpath "$script_dir/..")
+	export PROJECT_DIR="$project_dir"
 	envsubst <"$file_path" >"$temp_file"
 }
 

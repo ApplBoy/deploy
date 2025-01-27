@@ -4,12 +4,14 @@ After=network.target
 
 [Service]
 User=${USER}
-WorkingDirectory=${HOME}/actions-runner
-ExecStart=${HOME}/actions-runner/run.sh
+WorkingDirectory=${PROJECT_DIR}/actions-runner
+ExecStart=bash ${PROJECT_DIR}/actions-runner/run.sh
 Restart=always
 RestartSec=10
-Environment=PATH=/usr/bin:/usr/local/bin:${HOME}/actions-runner
+Environment=PATH=/usr/bin:/usr/local/bin:${PROJECT_DIR}/actions-runner
 Environment=HOME=${HOME}
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
