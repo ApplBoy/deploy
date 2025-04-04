@@ -125,10 +125,7 @@ function setup_github_actions_runner() {
     tar xzf ./actions-runner-linux-x64.tar.gz
     # ----[ INSTALLED ]-------------------------------------------------- #
 
-    token=$(
-        read -r -p "${ta_bold}Enter the GitHub Actions runner token \
-====> ${ta_none}"
-    )
+    read -r -p "${ta_bold}Enter the GitHub Actions runner token ====> ${ta_none}" token
 
     ./config.sh --url "https://github.com/$(get_repo)" --token "$token"
     # ----[ CONFIGURED ]------------------------------------------------- #
