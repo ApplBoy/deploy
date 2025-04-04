@@ -10,3 +10,5 @@ sudo
 gettext-base:envsubst
 jq
 awk
+gpg
+kubectl

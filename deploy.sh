@@ -125,10 +125,7 @@ function setup_github_actions_runner() {
     tar xzf ./actions-runner-linux-x64.tar.gz
     # ----[ INSTALLED ]-------------------------------------------------- #
 
-    token=$(
-        read -r -p "${ta_bold}Enter the GitHub Actions runner token \
-====> ${ta_none}"
-    )
+    read -r -p "${ta_bold}Enter the GitHub Actions runner token ====> ${ta_none}" token
 
     ./config.sh --url "https://github.com/$(get_repo)" --token "$token"
     # ----[ CONFIGURED ]------------------------------------------------- #
@@ -219,6 +216,48 @@ function setup_firewall() {
     echo "${fg_green}Firewall installed successfully.${ta_none}"
 }
 
+# DESC: Setup the Kubernetes
+# ARGS: None
+# OUTS: None
+# NOTE: Ask the user if they want to setup Kubernetes
+function setup_kubernetes() {
+    if [[ "${KUBERNETES_SETUP:-}" == "false" ]]; then
+        echo "Kubernetes setup is disabled."
+        return 0
+    fi
+
+    if [[ -n "${AWS_REGION:-}" || -n "${GCP_REGION:-}" || -n "${AZURE_REGION:-}" ]]; then
+        echo "Kubernetes setup is disabled in cloud environments."
+        return 0
+    fi
+
+    if [[ "${KUBERNETES_SETUP:-}" == "true" ]]; then
+        echo "Setting up Kubernetes."
+    else
+        read -r -p "${ta_bold}Do you want to setup Kubernetes? [y/N] \
+====> ${ta_none}" response
+        if [[ ! "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+            echo "Kubernetes setup skipped."
+            return 0
+        fi
+    fi
+
+    # ----[ PERMISSION GRANTED ]----------------------------------------- #
+
+    local bin
+
+    bin=$(get_kubectl_binary)
+    if [[ $? -ne 0 || -z "$bin" ]]; then
+        script_exit "${fg_red}Kubernetes binary not found.${ta_none}" 1
+    fi
+
+    # setup_kubernetes_rules "$bin"
+    echo "Kurbenetes still not implemented"
+
+    # ----[ INSTALLED ]-------------------------------------------------- #
+    echo "${fg_green}Kubernetes installed successfully.${ta_none}"
+}
+
 # DESC: Main control flow
 # ARGS: $@ (optional): Arguments provided to the script
 # OUTS: None
@@ -227,6 +266,7 @@ function main() {
     script_init """$@"
     setup_github_actions_runner
     setup_services
+    setup_kubernetes
     setup_database
     setup_nginx
     setup_firewall

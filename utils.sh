@@ -3,12 +3,16 @@
 # DESC: Shared environment initialisation if not already set
 # ARGS: None
 # OUTS: $CUSTOM_INIT_CONFIG: The path to the custom init configuration file
+#       $DB_CONFIG: The path to the database configuration file
+#       $K8S_CONFIG: The path to the Kubernetes configuration file
 #       $ACTION_RUNNER_DOWNLOAD_URL: The URL to download the GitHub Actions
 #       Runner
 #       $REQUIREMENTS_FILE: The path to the requirements file
 function shared_init() {
     # shellcheck disable=SC2154
-    readonly CUSTOM_INIT_CONFIG=${CUSTOM_INIT_CONFIG:-"$script_dir/sys-init.sh"}
+    readonly CUSTOM_INIT_CONFIG=${CUSTOM_INIT_CONFIG:-"$script_dir/sys-init.env"}
+    readonly DB_CONFIG=${DB_CONFIG:-"$script_dir/db.env"}
+    readonly K8S_CONFIG=${K8S_CONFIG:-"$script_dir/k8s.env"}
 
     readonly ACTIONS_RUNNER_DOWNLOAD_URL=${ACTIONS_RUNNER_DOWNLOAD_URL:-$(curl \
         -s https://api.github.com/repos/actions/runner/releases |
@@ -782,8 +786,8 @@ function get_firewall_binary() {
 # OUTS: $receive_ports: The ports to receive
 #       $send_ports: The ports to send
 # NOTE: To set up OPEN SEND and OPEN RECEIVE rules, the user must have the
-#      necessary permissions and declare the ports in the ports.txt file.
-#      The ports.txt file should have the following format:
+#      necessary permissions and declare the ports in the ports.conf file.
+#      The ports.conf file should have the following format:
 #      RECEIVE 80,443,8080,8081
 #      SEND 80,443,8080,8081
 function read_firewall_rules() {
@@ -834,7 +838,7 @@ function setup_firewall_rules() {
 
     echo "${fg_yellow}Setting up firewall rules in $firewall_bin...${ta_none}"
 
-    read_firewall_rules "$script_dir/ports.txt"
+    read_firewall_rules "$script_dir/ports.conf"
 
     join_by() {
         local IFS="$1"
@@ -918,6 +922,115 @@ function setup_firewall_rules() {
     fi
 }
 
+# DESC: Get Kubectl binary
+# ARGS: None
+# OUTS: The Kubectl binary path (stdout)
+function get_kubectl_binary() {
+    if command -v kubectl &>/dev/null; then
+        echo "$(command -v kubectl)"
+        return 0
+    else
+        echo ""
+        return 1
+    fi
+}
+
+# DESC: Check database environment
+# ARGS: None
+# OUTS: Boolean value indicating if the database environment is set up
+function check_db_env() {
+    # readonly DB_HOST="localhost"
+
+    if [[ -z ${DB_NAME-} || -z ${DB_USER-} || -z ${DB_PORT-} ]]; then
+        script_exit 'Database environment is not set up.' 1
+    fi
+
+    if [[ -z ${DB_KEY-} && -z ${DB_PASSWORD-} ]]; then
+        script_exit 'Database password or key is not set.' 1
+    fi
+
+    if [[ -z ${DB_HOST-} ]]; then
+        echo "${fg_red}DB_HOST is not set.${ta_none}"
+        echo "${fg_yellow}Using default value: localhost${ta_none}"
+        readonly DB_HOST="localhost"
+    fi
+}
+
+# DESC: Check if the kubernetes environment is set up
+# ARGS: None
+# OUTS: Boolean value indicating if the kubernetes environment is set up
+function check_kubernetes_env() {
+    if [[ -z ${K8S_NAMESPACE-} ]]; then
+        script_exit 'Kubernetes environment is not set up.' 1
+    fi
+
+    if [[ $K8S_AS_DB =~ ^(yes|true)$ ]]; then
+        if [[ -z ${K8S_DB_STORAGE} ]]; then
+            script_exit 'K8S_DB_STORAGE is not set.' 1
+        fi
+
+        if [[ -z ${K8S_DB_IMAGE_VERSION} ]]; then
+            echo "${fg_red}K8S_DB_IMAGE_VERSION is not set.${ta_none}"
+            echo "${fg_yellow}Using default version: latest${ta_none}"
+            readonly K8S_DB_IMAGE_VERSION="latest"
+        fi
+    fi
+}
+
+# DESC: Render the Kubernetes base templates
+# ARGS: $@ (required): List of folders
+# OUTS: $K8S_YAMLS: Array of rendered Kubernetes YAML file paths
+function render_base_kubernetes_templates() {
+    if [[ $# -lt 1 ]]; then
+        script_exit 'Missing required folders to render Kubernetes templates!' 2
+    fi
+
+    local rendered_files=()
+    local folders=("$@")
+
+    for folder in "${folders[@]}"; do
+        if [[ ! -d "$folder" ]]; then
+            script_exit "Folder not found: $folder" 1
+        fi
+
+        if [[ -z "$(find "$folder" -maxdepth 1 -name 'base-*.yaml.template' 2>/dev/null)" ]]; then
+            script_exit "No base-*.yaml.template files found in: $folder" 1
+        fi
+
+        local module_name
+        module_name=$(basename "$folder")
+        local output_dir="$script_dir/k8s/rendered/$module_name"
+
+        # Clean and recreate output dir
+        rm -rf "$output_dir"
+        mkdir -p "$output_dir"
+
+        while IFS= read -r -d '' file; do
+            if [[ ! -s "$file" ]]; then
+                script_exit "Template file is empty: $file" 1
+            fi
+
+            # Basic YAML sanity check (loose)
+            if ! grep -q '^[[:space:]]*[^#[:space:]].*:' "$file"; then
+                echo "${fg_yellow:-}Warning: File may not be a valid YAML: $file${ta_none:-}"
+            fi
+
+            local file_base
+            file_base="$(basename "$file")"
+            file_base="${file_base#base-}"
+            file_base="${file_base%.template}"
+            local output_file="$output_dir/$file_base"
+
+            envsubst <"$file" >"$output_file"
+            rendered_files+=("$output_file")
+            echo "${fg_green:-}Rendered: $output_file${ta_none:-}"
+        done < <(find "$folder" -maxdepth 1 -name 'base-*.yaml.template' -print0)
+
+    done
+
+    export K8S_YAMLS=("${rendered_files[@]}")
+}
+
 # DESC: Debug all functions by capturing and printing their outputs
 # ARGS: None
 # OUTS: Prints debugging information for functions
@@ -925,7 +1038,7 @@ function setup_firewall_rules() {
 if [[ $DEBUG =~ ^(yes|true)$ ]]; then
     echo "Debugging functions enabled."
     function debug_all_functions() {
-        output="$(read_firewall_rules "$script_dir/ports.txt")"
+        output="$(read_firewall_rules "$script_dir/ports.conf")"
         echo "====[ FIREWALL PORTS ]========================="
         echo "Receive Ports: ${receive_ports[*]}"
         echo "Send Ports: ${send_ports[*]}"

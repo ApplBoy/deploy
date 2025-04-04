@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: ${K8S_NAMESPACE}
+data:
+  POSTGRES_DB: "${DB_NAME}"

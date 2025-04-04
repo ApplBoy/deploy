@@ -51,7 +51,7 @@ The default setup and files are as follows:
 │       │   └── actions-runner.service
 │       ├── install.sh
 │       └── remove.sh
-├── sys-init.sh
+├── sys-init.env
 └── utils.sh
 
 4 directories, 10 files
@@ -60,7 +60,7 @@ The default setup and files are as follows:
 Inside `services` stays the services/timers for your application, you can add more, edit or remove them as you see fit.
 They will be parsed for environment variables, and the `install.sh` script will be run to install them.
 
-When adding a custom init, make sure to add the necessary variables in `sys-init.sh` and to create a new `install.sh` script following your
+When adding a custom init, make sure to add the necessary variables in `sys-init.env` and to create a new `install.sh` script following your
 init system's conventions.
 
 As for your firewall, if one or more firewall executables are found in your system, the script will ask you to select one to use, and will
@@ -69,7 +69,7 @@ set up the rules in `ports.txt` for you.
 **In other words:**
 
 - Services will parse environment variables, located at `services/your-init/your-service.service`
-- Declare the instructions to install in a custom init system in `services/your-init/install.sh` and `sys-init.sh`
+- Declare the instructions to install in a custom init system in `services/your-init/install.sh` and `sys-init.env`
 - Firewall rules are located at `ports.txt`, and will be detected by the script
 
 ## Roadmap
